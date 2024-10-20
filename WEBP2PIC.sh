@@ -1,15 +1,16 @@
 #!/bin/bash
 
 # Überprüfen, ob alle Parameter übergeben wurden
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <source_directory> <target_directory> <output_format>"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <source_directory> <source_format> <target_directory> <output_format>"
     exit 1
 fi
 
 # Eingabeparameter speichern
 SOURCE_DIR=$1
-TARGET_DIR=$2
-OUTPUT_FORMAT=$3
+SOURCE_FORMAT=$2
+TARGET_DIR=$3
+OUTPUT_FORMAT=$4
 
 # Überprüfen, ob das magick-Kommando verfügbar ist
 if ! command -v magick &> /dev/null; then
@@ -26,11 +27,11 @@ fi
 # Zielverzeichnis erstellen, falls es nicht existiert
 mkdir -p "$TARGET_DIR"
 
-# Alle .webp Dateien im Quellverzeichnis durchlaufen und konvertieren
-for file in "$SOURCE_DIR"/*.webp; do
+# Alle Dateien des angegebenen Quellformats im Quellverzeichnis durchlaufen und konvertieren
+for file in "$SOURCE_DIR"/*.$SOURCE_FORMAT; do
     if [ -f "$file" ]; then
         # Dateiname ohne Erweiterung extrahieren
-        filename=$(basename "$file" .webp)
+        filename=$(basename "$file" .$SOURCE_FORMAT)
         # Datei konvertieren und im Zielverzeichnis speichern
         magick "$file" "$TARGET_DIR/$filename.$OUTPUT_FORMAT"
         if [ $? -eq 0 ]; then
@@ -42,3 +43,6 @@ for file in "$SOURCE_DIR"/*.webp; do
 done
 
 echo "Conversion completed!"
+
+# chmod +x convert_images.sh
+# ./convert_images.sh /pfad/zum/quellordner webp /pfad/zum/zielordner jpg
