@@ -66,13 +66,15 @@ done
 
 # --- codec mapping ---
 CODEC_ARGS=()
-case "${FORMAT,,}" in
+fmt="$(printf '%s' "$FORMAT" | tr '[:upper:]' '[:lower:]')"
+case "$fmt" in
   m4a|aac)   FORMAT="m4a"; CODEC_ARGS=(-c:a aac -b:a "$BITRATE");;
   mp3)       CODEC_ARGS=(-c:a libmp3lame -b:a "$BITRATE");;
   wav)       CODEC_ARGS=(-c:a pcm_s16le);;
   flac)      CODEC_ARGS=(-c:a flac);;
   *)         die "Unbekanntes Format: $FORMAT (erlaubt: m4a, mp3, wav, flac)";;
 esac
+
 
 # --- helpers ---
 ff_overwrite_flag=("-n")
@@ -129,15 +131,21 @@ process_file() {
 if [[ -f "$INPUT" ]]; then
   process_file "$INPUT"
 elif [[ -d "$INPUT" ]]; then
-  depth_args=()
-  $RECURSIVE || depth_args=(-maxdepth 1)
-  # shellcheck disable=SC2046
-  eval set -- "$(ext_regex)"  # erweitert nur den Ausdruck einmal
-  # BSD find: -print0 für sichere Iteration
-  # shellcheck disable=SC2038
-  find "$INPUT" "${depth_args[@]}" "$@" -print0 | while IFS= read -r -d '' f; do
-    process_file "$f"
-  done
+  if $RECURSIVE; then
+    # rekursiv
+    find "$INPUT" -type f \( -iname '*.mp4' -o -iname '*.mov' -o -iname '*.m4v' -o -iname '*.mkv' -o -iname '*.avi' -o -iname '*.webm' \) -print0 \
+    | while IFS= read -r -d '' f; do
+      process_file "$f"
+    done
+  else
+    # NICHT rekursiv (BSD find hat kein -maxdepth: wir nutzen -prune)
+    find "$INPUT" \
+    -type d -mindepth 1 -prune -o \
+    -type f \( -iname '*.mp4' -o -iname '*.mov' -o -iname '*.m4v' -o -iname '*.mkv' -o -iname '*.avi' -o -iname '*.webm' \) -print0 \
+    | while IFS= read -r -d '' f; do
+      process_file "$f"
+    done
+  fi
 else
   die "Pfad nicht gefunden: $INPUT"
 fi
