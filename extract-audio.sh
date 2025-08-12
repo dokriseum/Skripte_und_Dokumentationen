@@ -109,23 +109,25 @@ out_path_for() {
 
 process_file() {
   local in="$1"
-  # Überspringe Nicht-Dateien (Sicherheit bei find)
   [[ -f "$in" ]] || return 0
-  local out
-  out="$(out_path_for "$in")"
-
+  local out; out="$(out_path_for "$in")"
+  
   echo ">> Konvertiere:"
   echo "   IN : $in"
   echo "   OUT: $out"
-
-  # ffmpeg-Aufruf
-  # -vn: kein Video; -map_metadata 0: Metadaten übernehmen; -movflags +faststart: für m4a/mp4 sinnvoll
+  
+  # Gemeinsame Flags
+  local ff_flags=(-hide_banner -loglevel error -stats -nostdin)
+  
   if [[ "${FORMAT}" == "m4a" ]]; then
-    ffmpeg -hide_banner -loglevel error -stats -i "$in" -vn "${CODEC_ARGS[@]}" -map_metadata 0 -movflags +faststart "${ff_overwrite_flag[@]}" "$out"
+    ffmpeg "${ff_flags[@]}" -i "$in" -vn "${CODEC_ARGS[@]}" -map_metadata 0 -movflags +faststart \
+    "${ff_overwrite_flag[@]}" "$out" </dev/null
   else
-    ffmpeg -hide_banner -loglevel error -stats -i "$in" -vn "${CODEC_ARGS[@]}" -map_metadata 0 "${ff_overwrite_flag[@]}" "$out"
+    ffmpeg "${ff_flags[@]}" -i "$in" -vn "${CODEC_ARGS[@]}" -map_metadata 0 \
+    "${ff_overwrite_flag[@]}" "$out" </dev/null
   fi
 }
+
 
 # --- main ---
 if [[ -f "$INPUT" ]]; then
